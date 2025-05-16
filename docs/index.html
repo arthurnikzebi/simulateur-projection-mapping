@@ -1,0 +1,2618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulateur Projection Mapping</title>
+  <style>
+    /* Styles existants */
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background: #f4f4f4; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+    }
+
+    /* Nouveau style pour le header - version compacte */
+    .site-header {
+      width: 100%;
+      background: #2c3e50;
+      color: white;
+      padding: 0.5rem 0; /* réduit */
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 44px; /* réduit */
+    }
+
+    .header-title {
+      font-size: 1.25rem; /* légèrement réduit */
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      height: 100%;
+    }
+
+    .header-button {
+      padding: 0.35rem 0.8rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s;
+      height: 32px;
+      font-size: 0.98rem;
+    }
+
+    .header-button:hover {
+      background: #2980b9;
+    }
+
+    .header-button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    /* Ajustement du contenu principal pour le header */
+    .main-wrapper {
+      margin-top: 0;
+      padding-top: 100px; /* Augmentation du padding-top pour éviter le chevauchement */
+      width: 100%;
+      max-width: 1200px;
+      box-sizing: border-box;
+    }
+
+    /* Styles existants pour le panneau de couleurs */
+    #color-panel {
+      position: fixed;
+      top: 80px;
+      right: -300px;
+      width: 280px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      padding: 15px;
+      border-radius: 8px;
+      transition: right 0.3s ease;
+      z-index: 999;
+    }
+
+    #color-panel h3 {
+      margin: 0 0 15px 0;
+      color: #2c3e50;
+    }
+
+    #color-panel h4 {
+      margin: 0 0 10px 0;
+      color: #34495e;
+      font-size: 0.9rem;
+    }
+
+    .color-section {
+      margin-bottom: 20px;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .color-option {
+      width: 100%;
+      padding-bottom: 100%;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+
+    .color-option.selected {
+      border-color: #2c3e50;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+
+    /* Reste des styles existants */
+    .main-wrapper { width: 100%; max-width: 100vw; margin: 0 auto; box-sizing: border-box; padding-left: 0.5vw; padding-right: 0.5vw; }
+    .container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 100%; box-sizing: border-box; }
+    .sections { display: flex; flex-direction: row; width: 100%; justify-content: space-around; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap; }
+    .section { padding: 1rem; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.1); width: 22%; min-width: 220px; box-sizing: border-box; margin-bottom: 1rem; }
+    .section.building { background: #e0f7fa; }
+    .section.projector { background: #e8f5e9; }
+    .section.thresholds { background: #fff3e0; }
+    .section.manual { background: #ffe5e5; }
+    .section.results { background: #fff; }
+    fieldset { padding: 0.75rem; border-radius: 6px; background: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    legend { font-weight: bold; }
+    label { display: block; margin: 0.5rem 0; }
+    input, select, button { padding: 0.4rem; font-size: 1rem; }
+    #feedback { margin-top: 1rem; padding: 0.5rem; border-radius: 4px; color: #800; background: #fee; display: none; }
+    #canvas-container { display: flex; flex-direction: row; align-items: flex-start; width: 100%; gap: 2rem; flex-wrap: wrap; }
+    #canvas-container canvas { background: #eee; border: 1px solid #ccc; max-width: 100%; height: auto; }
+    #results-container { display: flex; flex-direction: column; align-items: flex-start; width: 33%; min-width: 260px; max-width: 400px; box-sizing: border-box; }
+    #results { white-space: pre-wrap; margin-top: 1rem; background: #fff; padding: 1rem; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.1); width: 100%; }
+    #legend { margin-top: 1rem; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1); background: #fff; }
+    .footer { margin-top: 2rem; width: 100%; text-align: center; padding: 1rem; background: #e0e0e0; border-top: 2px solid #ccc; }
+    #temp-results { white-space: pre-wrap; margin-top: 1rem; background: #f0f0f0; padding: 1rem; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.1); width: 100%; display: none; }
+
+    /* Styles pour la visualisation des focales */
+    :root {
+      --min-f: 0.35;
+      --max-f: 7.41;
+    }
+    .container-wrapper {
+      background-color: #f3e8ff; /* violet clair */
+      border: 2px solid #a855f7; /* violet */
+      padding: 20px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      margin: 2rem auto 0 auto;
+      box-sizing: border-box;
+    }
+    .container-wrapper .container,
+    .container-wrapper .range-line,
+    .container-wrapper .graduation {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    .container-wrapper h2 { margin-top: 0; }
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 900px;
+      min-width: 300px;
+      margin: auto;
+      padding-bottom: 80px;
+      box-sizing: border-box;
+    }
+    .range-line, .graduation {
+      width: 100%;
+      min-width: 300px;
+      max-width: 900px;
+      box-sizing: border-box;
+    }
+    .range-line {
+      position: relative;
+      height: 30px;
+      margin-bottom: 10px;
+    }
+    .range {
+      position: absolute;
+      height: 100%;
+      border: 1px solid #888;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 12px;
+      line-height: 30px;
+      color: white;
+      background: linear-gradient(to right, #eeddff, #a855f7);
+    }
+    .graduation {
+      position: relative;
+      height: 50px;
+      border-top: 2px solid #333;
+      margin-top: 30px;
+    }
+    .tick {
+      position: absolute;
+      top: -5px;
+      width: 1px;
+      height: 10px;
+      background: #333;
+    }
+    .tick-label {
+      position: absolute;
+      font-size: 11px;
+      transform: translateX(-50%);
+      top: 12px;
+    }
+    #marker {
+      position: absolute;
+      top: -15px;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 15px solid red;
+      display: none;
+    }
+    #marker-line {
+      position: absolute;
+      top: -25px;
+      height: 2px;
+      background-color: red;
+      display: none;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+
+    /* Responsive design */
+    @media (max-width: 900px) {
+      .main-wrapper { max-width: 100vw; }
+      .sections { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+      .section { width: 100%; min-width: 0; margin-bottom: 1rem; }
+      #canvas-container { flex-direction: column; gap: 1rem; }
+      #results-container { width: 100%; min-width: 0; max-width: 100%; }
+      .container-wrapper, .container, .range-line, .graduation { max-width: 100vw; min-width: 0; }
+    }
+    @media (max-width: 600px) {
+      .main-wrapper { padding: 0 2vw; }
+      .container-wrapper { padding: 10px; }
+      .container { padding-bottom: 40px; }
+      #canvas-container canvas { width: 100% !important; height: auto !important; }
+    }
+    @media (max-width: 700px) {
+      .main-wrapper { padding: 0 2vw; }
+      .container-wrapper { padding: 10px; }
+      .container { padding-bottom: 40px; }
+      .viz-canvas canvas { width: 100% !important; height: auto !important; }
+    }
+
+    /* Ajout des styles pour la nouvelle structure */
+    .input-row {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      box-sizing: border-box;
+    }
+    .input-row .section {
+      flex: 1 1 0;
+      min-width: 220px;
+      max-width: 100%;
+      margin-bottom: 0;
+    }
+    .viz-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    .viz-canvas {
+      flex: 2 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      box-sizing: border-box;
+    }
+    .viz-canvas button {
+      margin-bottom: 1rem;
+    }
+    .viz-canvas #feedback {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    .viz-canvas canvas {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      box-sizing: border-box;
+      background: #eee;
+      border: 1px solid #ccc;
+    }
+    .viz-results {
+      flex: 1 1 0;
+      min-width: 260px;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      box-sizing: border-box;
+    }
+    .viz-results #results,
+    .viz-results #temp-results,
+    .viz-results #legend {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .input-row, .viz-row { flex-direction: column; gap: 1rem; }
+      .input-row .section, .viz-canvas, .viz-results { width: 100%; min-width: 0; max-width: 100%; }
+      .viz-row { gap: 1rem; }
+    }
+
+    /* Styles pour la visualisation 3D */
+    #scene-container {
+      width: 100%;
+      height: 400px;
+      margin-top: 1rem;
+      position: relative;
+      background: #f0f0f0;
+      border: 2px solid #666;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #scene {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .footer {
+      margin-top: 2rem;
+      width: 100%;
+      text-align: center;
+      padding: 1rem;
+      background: #e0e0e0;
+      border-top: 2px solid #ccc;
+    }
+
+    /* Panneau de personnalisation des couleurs */
+    #color-panel {
+      position: fixed;
+      top: 80px;
+      right: -300px;
+      width: 280px;
+      background: #2c3e50;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      transition: right 0.3s ease;
+      z-index: 1000;
+    }
+    #color-panel h3 { color: white; margin: 0; }
+    #close-color-panel {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 20px;
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+    }
+    .color-option {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .color-option:hover {
+      border-color: #666;
+    }
+    .color-option.selected {
+      border-color: #000;
+    }
+    #toggle-color-panel {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    /* Styles pour le panneau de couleurs */
+    .color-section {
+        margin-bottom: 20px;
+    }
+
+    .color-section h4 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .color-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .color-option {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .color-option:hover {
+        transform: scale(1.1);
+        border-color: white;
+        box-shadow: 0 0 5px rgba(255,255,255,0.5);
+    }
+
+    .color-option.selected {
+        border-color: white;
+        box-shadow: 0 0 5px rgba(255,255,255,0.5);
+    }
+
+    .color-option::after {
+        content: attr(title);
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .color-option:hover::after {
+        opacity: 1;
+    }
+
+    /* Responsive design pour le panneau de couleurs */
+    @media (max-width: 600px) {
+        #color-panel {
+            width: 100%;
+            right: -100%;
+            top: 60px;
+        }
+        
+        .color-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        
+        .color-option {
+            width: 35px;
+            height: 35px;
+        }
+    }
+
+    /* Styles pour les nouveaux contrôles */
+    input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    #zoom-controls {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    #zoom-controls label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    #zoomValue {
+      display: inline-block;
+      min-width: 50px;
+      text-align: right;
+      margin-left: 10px;
+    }
+
+    input[name="calcMode"] {
+      margin-right: 5px;
+    }
+
+    fieldset legend {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    /* Ajout des styles pour les encarts pliables */
+    /* Reste des styles existants */
+    .main-wrapper { width: 100%; max-width: 100vw; margin: 0 auto; box-sizing: border-box; padding-left: 0.5vw; padding-right: 0.5vw; }
+    .container { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 100%; box-sizing: border-box; }
+    .sections { display: flex; flex-direction: row; width: 100%; justify-content: space-around; margin-bottom: 2rem; gap: 1.5rem; flex-wrap: wrap; }
+    .section { padding: 1rem; border-radius: 6px; box-shadow: 0 0 5px rgba(0,0,0,0.1); width: 22%; min-width: 220px; box-sizing: border-box; margin-bottom: 1rem; }
+    .section.building { background: #e0f7fa; }
+    .section.projector { background: #e8f5e9; }
+    .section.thresholds { background: #fff3e0; }
+    .section.manual { background: #ffe5e5; }
+    .section.results { background: #fff; }
+    fieldset { padding: 0.75rem; border-radius: 6px; background: #fff; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    legend { font-weight: bold; }
+    label { display: block; margin: 0.5rem 0; }
+    input, select, button { padding: 0.4rem; font-size: 1rem; }
+    #feedback { margin-top: 1rem; padding: 0.5rem; border-radius: 4px; color: #800; background: #fee; display: none; }
+
+    /* Styles pour les encarts pliables - version robuste */
+    .collapsible-section {
+      margin-bottom: 1.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      padding: 0.8rem 1rem;
+      background: #f5f5f5;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+    .collapsible-header:hover {
+      background: #e0e0e0;
+    }
+    .collapsible-toggle {
+      background: none;
+      border: none;
+      padding: 5px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+    }
+    .collapsible-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+    .collapsible-title {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-left: 10px;
+      flex-grow: 1;
+    }
+    .collapsible-content {
+      overflow: hidden;
+      transition: height 0.3s ease-out;
+      height: auto;
+    }
+    .collapsible-section.collapsed .collapsible-toggle {
+      transform: rotate(-90deg);
+    }
+    .collapsible-section.collapsed .collapsible-content {
+      height: 0;
+      display: none;
+    }
+
+    /* CSS minimal pour les panneaux pliables */
+    .fold-section {
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .fold-header {
+      padding: 10px 15px;
+      background: #f0f0f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      border-radius: 6px 6px 0 0;
+    }
+    .fold-header:hover {
+      background: #e0e0e0;
+    }
+    .fold-title {
+      font-weight: bold;
+      flex: 1;
+      margin-left: 10px;
+    }
+    .fold-arrow {
+      width: 20px;
+      height: 20px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+    }
+    .fold-arrow svg {
+      transition: transform 0.3s;
+      transform-origin: center;
+    }
+    .fold-content {
+      padding: 15px;
+      display: block;
+    }
+    .fold-section.closed .fold-content {
+      display: none;
+    }
+    .fold-section.closed .fold-arrow svg {
+      transform: rotate(-90deg);
+    }
+    .fold-section:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Nouveau header -->
+  <header class="site-header">
+    <div class="header-content">
+      <div style="display: flex; align-items: center; gap: 1.2rem;">
+        <h1 class="header-title" style="margin-left: 0;">Simulateur Projection Mapping</h1>
+        <span class="header-warning">(en cours de développement, des erreurs peuvent être présentes)</span>
+      </div>
+      <div class="header-actions">
+        <button id="toggle-color-panel" class="header-button">
+          <span>Personnaliser les couleurs</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main-wrapper">
+    <!-- Ligne 1 : 4 boîtes d'inputs -->
+    <div class="input-row">
+      <div class="section building">
+        <fieldset>
+          <legend>Bâtiment</legend>
+          <label>Largeur (m) : <input type="number" id="bldgW" step="0.01" value="40"></label>
+          <label>Hauteur (m): <input type="number" id="bldgH" step="0.01" value="15"></label>
+          
+          <fieldset style="margin:1rem 0; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+            <legend>Mode de calcul</legend>
+            <label><input type="radio" name="calcMode" value="horizontal" checked> Horizontal</label>
+            <label><input type="radio" name="calcMode" value="vertical"> Vertical</label>
+          </fieldset>
+
+          <div id="zoom-controls" style="display:none; margin-top:1rem;">
+            <label>Niveau de zoom : <input type="range" id="zoomLevel" min="100" max="200" value="100" step="1">
+              <span id="zoomValue">100%</span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="section projector">
+        <fieldset>
+          <legend>Projecteur & Orientation</legend>
+          <label>Profil projecteur :
+            <select id="projectorProfile" onchange="onProjectorChange()">
+              <option value="ebpu2220b">Epson EB-PU2220B</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label>Aspect ratio :
+            <select id="aspect">
+              <option value="16/9">16:9</option>
+              <option value="16/10" selected>16:10</option>
+            </select>
+          </label>
+          <label>Résolution (px) : W <input type="number" id="resW" value="1920" style="width:5rem;">
+                                × H <input type="number" id="resH" value="1200" style="width:5rem;"></label>
+          <label>Lumens : <input type="number" id="lumens" value="20000"></label>
+
+          <fieldset style="margin:1rem 0; padding:0.5rem; border:1px solid #ccc; border-radius:4px;">
+            <legend>Mode orientation</legend>
+            <label><input type="radio" name="orientMode" value="auto" checked> Auto</label>
+            <label><input type="radio" name="orientMode" value="land"> Paysage</label>
+            <label><input type="radio" name="orientMode" value="port"> Portrait</label>
+          </fieldset>
+        </fieldset>
+      </div>
+      <div class="section thresholds">
+        <fieldset>
+          <legend>Projection & Seuils</legend>
+          <label>Distance fixe (m) : <input type="number" id="dist" step="0.1" value="50"></label>
+          <label>Lux minimum (lx) : <input type="number" id="minLux" step="1" value="100"></label>
+          <label>Pixel max (mm) : <input type="number" id="maxPixel" step="0.1" value="20"></label>
+          <label>Overlap horiz. (%) : <input type="number" id="ovx" step="1" value="20"></label>
+          <label>Overlap vert. (%)  : <input type="number" id="ovy" step="1" value="20"></label>
+          <label>Zoom Projection (%) :
+            <input type="range" id="projectionZoomLevel" min="25" max="175" value="100" step="1" style="width: calc(100% - 70px); display: inline-block; vertical-align: middle; margin-right: 5px;">
+            <span id="projectionZoomValue" style="display: inline-block; width: 50px; text-align: right; vertical-align: middle;">100%</span>
+          </label>
+          <button id="btn-auto" onclick="runSimulation()">Calcul automatique</button>
+        </fieldset>
+      </div>
+      <div class="section manual">
+        <fieldset>
+          <legend>Réglage manuel</legend>
+          <label>Colonnes : <input type="number" id="manCols" min="1"></label>
+          <label>Rangées  : <input type="number" id="manRows" min="1"></label>
+          <label>Pixel max (mm) : <input type="number" id="manMaxPixel" step="0.1" value="20"></label>
+          <label>Stack :
+            <select id="manStack">
+              <option value="1">Single</option>
+              <option value="2">Dual</option>
+              <option value="3">Trial</option>
+              <option value="4">Quadral</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+          <label>Overlap horiz. (%) : <input type="number" id="manOvX" step="1" value="20"></label>
+          <label>Overlap vert. (%)  : <input type="number" id="manOvY" step="1" value="20"></label>
+          <label>Zoom Projection (%) :
+            <input type="range" id="manualProjectionZoomLevel" min="25" max="175" value="100" step="1" style="width: calc(100% - 70px); display: inline-block; vertical-align: middle; margin-right: 5px;">
+            <span id="manualProjectionZoomValue" style="display: inline-block; width: 50px; text-align: right; vertical-align: middle;">100%</span>
+          </label>
+          <button id="btn-manual" onclick="manualUpdate()">Calcul manuel</button>
+          <div id="manual-extra">
+            <div>Lux : <span id="manual-lux">-</span></div>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+    <!-- Ligne 2 : Visualisation + Résultats -->
+    <div class="viz-row">
+      <!-- Simulation automatique -->
+      <div class="fold-section" id="auto-sim-section">
+        <div class="fold-header" onclick="toggleSection('auto-sim-section')">
+          <button class="fold-arrow" onclick="toggleSection('auto-sim-section', event)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="fold-title">Simulation automatique</div>
+        </div>
+        <div class="fold-content">
+          <div style="display: flex; flex-direction: row; width: 100%; gap: 2rem;">
+            <div class="viz-canvas" style="flex:2;">
+              <div id="feedback"></div>
+              <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <label style="margin: 0;">Zoom:</label>
+                <input type="range" id="zoom-slider-auto" min="0.1" max="2" step="0.1" value="1" style="flex: 1;">
+                <span id="zoom-value-auto">100%</span>
+                <button id="reset-view-auto" class="header-button" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;">
+                  Réinitialiser la vue
+                </button>
+              </div>
+              <div style="position: relative; overflow: hidden; border: 1px solid #ccc; width: 100%; height: 700px;">
+                <canvas id="cv-auto" width="1600" height="1400"></canvas>
+              </div>
+            </div>
+            <div class="viz-results" style="flex:1; align-self: flex-start;">
+              <div id="results-auto"></div>
+              <div id="public-distance-bar-auto" style="margin-top:1.5em; display:none;">
+                <div style="width:100%;height:18px;position:relative;">
+                  <canvas id="bar-pixel-public-auto" width="320" height="18" style="width:100%;max-width:320px;display:block;"></canvas>
+                  <div id="bar-pixel-cursor-auto" style="position:absolute;top:0;left:0;width:0;height:0;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;">
+                  <span>0 m</span><span id="bar-pixel-max-label-auto">50 m</span>
+                </div>
+                <div id="bar-pixel-text-auto" style="font-size:13px;margin-top:4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Retirer la barre de séparation ici -->
+      
+      <!-- Simulation manuelle -->
+      <div class="fold-section closed" id="manual-sim-section">
+        <div class="fold-header" onclick="toggleSection('manual-sim-section')">
+          <button class="fold-arrow" onclick="toggleSection('manual-sim-section', event)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <div class="fold-title">Simulation manuelle</div>
+        </div>
+        <div class="fold-content">
+          <div style="display: flex; flex-direction: row; width: 100%; gap: 2rem;">
+            <div class="viz-canvas" style="flex:2;">
+              <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                <label style="margin: 0;">Zoom:</label>
+                <input type="range" id="zoom-slider-manual" min="0.1" max="2" step="0.1" value="1" style="flex: 1;">
+                <span id="zoom-value-manual">100%</span>
+                <button id="reset-view-manual" class="header-button" style="padding: 0.3rem 0.8rem; font-size: 0.9rem;">
+                  Réinitialiser la vue
+                </button>
+              </div>
+              <div style="position: relative; overflow: hidden; border: 1px solid #ccc; width: 100%; height: 700px;">
+                <canvas id="cv-manual" width="1600" height="1400"></canvas>
+              </div>
+            </div>
+            <div class="viz-results" style="flex:1; align-self: flex-start;">
+              <div id="results-manual"></div>
+              <div id="public-distance-bar" style="margin-top:1.5em; display:none;">
+                <div style="width:100%;height:18px;position:relative;">
+                  <canvas id="bar-pixel-public" width="320" height="18" style="width:100%;max-width:320px;display:block;"></canvas>
+                  <div id="bar-pixel-cursor" style="position:absolute;top:0;left:0;width:0;height:0;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;">
+                  <span>0 m</span><span id="bar-pixel-max-label">50 m</span>
+                </div>
+                <div id="bar-pixel-text" style="font-size:13px;margin-top:4px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Légende déplacée en bas -->
+    <div class="fold-section closed" id="legend-section">
+      <div class="fold-header" onclick="toggleSection('legend-section')">
+        <button class="fold-arrow" onclick="toggleSection('legend-section', event)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="fold-title">Légende</div>
+      </div>
+      <div class="fold-content">
+        <div id="legend">
+          <p>Légende :</p>
+          <p style="background:#9cffac;">1 projecteur</p>
+          <p style="background:#00ff00;">2 projecteurs (Dual)</p>
+          <p style="background:#00b200;">3 projecteurs (Trial)</p>
+          <p style="background:#006b00;">4 projecteurs (Quadral)</p>
+          <p style="background:#d8bfd8;">5 projecteurs</p>
+          <p style="background:#ba68c8;">6 projecteurs</p>
+          <p style="background:#9c27b0;">7 projecteurs</p>
+          <p style="background:#4a148c;">8 projecteurs</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Ligne 3 : Droite de sélection des focales -->
+    <div class="fold-section closed" id="focal-section">
+      <div class="fold-header" onclick="toggleSection('focal-section')">
+        <button class="fold-arrow" onclick="toggleSection('focal-section', event)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="fold-title">Plages de focales</div>
+      </div>
+      <div class="fold-content">
+        <div class="container-wrapper" style="margin-top: 0;">
+          <div class="container" id="viz">
+            <div class="range-line" id="line0"></div>
+            <div class="range-line" id="line1"></div>
+            <div class="graduation" id="grad"></div>
+          </div>
+          <div id="result"></div>
+          <div id="focal-legend" style="margin-top:8px;font-size:13px;">
+            <span style="color:gold;font-weight:bold;">▲</span> Curseur jaune : focale automatique &nbsp; &nbsp;
+            <span style="color:red;font-weight:bold;">▲</span> Curseur rouge : focale manuelle
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Ligne 4 : Zone de développement 3D -->
+    <div class="fold-section closed" id="3d-section">
+      <div class="fold-header" onclick="toggleSection('3d-section')">
+        <button class="fold-arrow" onclick="toggleSection('3d-section', event)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="fold-title">Visualisation 3D de la simulation</div>
+      </div>
+      <div class="fold-content">
+        <button id="btn-launch-3d" style="margin-bottom: 1rem; padding: 0.5rem 1rem; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+          Lancer la simulation 3D
+        </button>
+        <div id="visualisation-3d-container" style="
+          display: flex;
+          width: 100%;
+          height: 600px;
+          background: #f0f0f0;
+          border: 2px solid #666;
+          border-radius: 8px;
+          overflow: hidden;
+        ">
+          <div style="
+            flex: 2;
+            height: 100%;
+            border-right: 2px solid #666;
+            position: relative;
+          ">
+            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px;">
+              Vue 3D (Orbit)
+            </div>
+            <canvas id="scene-3d" style="width: 100%; height: 100%; display: block;"></canvas>
+          </div>
+          <div style="
+            flex: 1;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+          ">
+            <div style="
+              flex: 1;
+              border-bottom: 2px solid #666;
+              position: relative;
+            ">
+              <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px;">
+                Vue de côté
+              </div>
+              <canvas id="scene-side" style="width: 100%; height: 100%; display: block;"></canvas>
+            </div>
+            <div style="
+              flex: 1;
+              position: relative;
+            ">
+              <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 4px;">
+                Vue du dessus
+              </div>
+              <canvas id="scene-top" style="width: 100%; height: 100%; display: block;"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panneau de personnalisation des couleurs -->
+  <div id="color-panel" style="position: fixed; top: 80px; right: -300px; width: 280px; background: #2c3e50; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); transition: right 0.3s ease; z-index: 1000;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="color: white; margin: 0;">Personnalisation des couleurs</h3>
+        <button id="close-color-panel" style="background: none; border: none; color: white; cursor: pointer; font-size: 20px;">×</button>
+    </div>
+    
+    <div class="color-section" data-target="matrix-color">
+        <h4 style="color: white; margin-bottom: 10px;">Couleur des matrices</h4>
+        <div class="color-grid">
+            <div class="color-option" data-color="#ff0000" style="background-color: #ff0000;" title="Rouge"></div>
+            <div class="color-option" data-color="#00ff00" style="background-color: #00ff00;" title="Vert"></div>
+            <div class="color-option" data-color="#0000ff" style="background-color: #0000ff;" title="Bleu"></div>
+            <div class="color-option" data-color="#ffff00" style="background-color: #ffff00;" title="Jaune"></div>
+            <div class="color-option" data-color="#ff00ff" style="background-color: #ff00ff;" title="Magenta"></div>
+            <div class="color-option" data-color="#00ffff" style="background-color: #00ffff;" title="Cyan"></div>
+            <div class="color-option" data-color="#00ffcc" style="background-color: #00ffcc;" title="Vert d'eau"></div>
+            <div class="color-option" data-color="#8000ff" style="background-color: #8000ff;" title="Violet"></div>
+            <div class="color-option" data-color="#ff80ff" style="background-color: #ff80ff;" title="Rose"></div>
+            <div class="color-option" data-color="#ff8000" style="background-color: #ff8000;" title="Orange"></div>
+        </div>
+    </div>
+
+    <div class="color-section" data-target="overlap-color">
+        <h4 style="color: white; margin-bottom: 10px;">Couleur des chevauchements</h4>
+        <div class="color-grid">
+            <div class="color-option" data-color="rgba(0,0,200,0.4)" style="background-color: rgba(0,0,200,0.4);"></div>
+            <div class="color-option" data-color="rgba(200,0,0,0.4)" style="background-color: rgba(200,0,0,0.4);"></div>
+            <div class="color-option" data-color="rgba(0,200,0,0.4)" style="background-color: rgba(0,200,0,0.4);"></div>
+            <div class="color-option" data-color="rgba(200,200,0,0.4)" style="background-color: rgba(200,200,0,0.4);"></div>
+            <div class="color-option" data-color="rgba(0,200,200,0.4)" style="background-color: rgba(0,200,200,0.4);"></div>
+            <div class="color-option" data-color="rgba(200,0,200,0.4)" style="background-color: rgba(200,0,200,0.4);"></div>
+            <div class="color-option" data-color="rgba(128,128,128,0.4)" style="background-color: rgba(128,128,128,0.4);"></div>
+            <div class="color-option" data-color="rgba(255,165,0,0.4)" style="background-color: rgba(255,165,0,0.4);"></div>
+            <div class="color-option" data-color="rgba(128,0,128,0.4)" style="background-color: rgba(128,0,128,0.4);"></div>
+            <div class="color-option" data-color="rgba(0,128,128,0.4)" style="background-color: rgba(0,128,128,0.4);"></div>
+        </div>
+    </div>
+
+    <div class="color-section" data-target="border-color">
+        <h4 style="color: white; margin-bottom: 10px;">Couleur des bordures</h4>
+        <div class="color-grid">
+            <div class="color-option" data-color="#ff9800" style="background-color: #ff9800;"></div>
+            <div class="color-option" data-color="#f44336" style="background-color: #f44336;"></div>
+            <div class="color-option" data-color="#2196f3" style="background-color: #2196f3;"></div>
+            <div class="color-option" data-color="#4caf50" style="background-color: #4caf50;"></div>
+            <div class="color-option" data-color="#9c27b0" style="background-color: #9c27b0;"></div>
+            <div class="color-option" data-color="#000000" style="background-color: #000000;"></div>
+            <div class="color-option" data-color="#666666" style="background-color: #666666;"></div>
+            <div class="color-option" data-color="#ff6b6b" style="background-color: #ff6b6b;"></div>
+            <div class="color-option" data-color="#4a90e2" style="background-color: #4a90e2;"></div>
+            <div class="color-option" data-color="#50e3c2" style="background-color: #50e3c2;"></div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Scripts Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/",
+        "three/examples/jsm/controls/OrbitControls.js": "https://unpkg.com/three@0.152.2/examples/jsm/controls/OrbitControls.js",
+        "three/examples/jsm/loaders/GLTFLoader.js": "https://unpkg.com/three@0.152.2/examples/jsm/loaders/GLTFLoader.js"
+      }
+    }
+  </script>
+  <script type="module" src="js/three-init.js"></script>
+
+<script>
+// Specs Epson EB-PU2220B
+const SENSOR_DIAG_IN = 0.67, IN_TO_MM = 25.4;
+const SENSOR_RATIO = 16/10;
+const SENSOR_W = SENSOR_DIAG_IN * (SENSOR_RATIO/Math.hypot(SENSOR_RATIO,1)) * IN_TO_MM;
+
+// configuration optimale
+let layout = null;
+let tempLayout = null;
+
+// relance auto si on change l'orientation
+document.querySelectorAll('input[name="orientMode"]').forEach(el=>
+  el.addEventListener('change', runSimulation)
+);
+
+// === Début ajout : profils de projecteurs ===
+const PROJECTORS = [
+  {
+    id: 'ebpu2220b',
+    name: 'Epson EB-PU2220B',
+    brightness: 20000,
+    contrast: 'Over 5,000,000:1',
+    resolution: { w: 1920, h: 1200 },
+    aspect: '16/10',
+    lightSource: 'Laser',
+    weight: '24.4 kg',
+    size: '586 x 218 x 492 mm',
+    voltage: '200 - 240 V AC +/- 10%, 50/60 Hz',
+    power_100v: '810W (Normal)',
+    power_200v: '1301W (Normal) / 899W (Eco)',
+    decibel: '45dB',
+    main: true
+  },
+  {
+    id: 'custom',
+    name: 'Custom',
+    brightness: null,
+    contrast: null,
+    resolution: { w: null, h: null },
+    aspect: null,
+    lightSource: null,
+    weight: null,
+    size: null,
+    voltage: null,
+    power_100v: null,
+    power_200v: null,
+    decibel: null,
+    main: false
+  }
+];
+let selectedProjector = PROJECTORS[0];
+// === Fin ajout : profils de projecteurs ===
+
+function showFeedback(msg) {
+  const fb = document.getElementById('feedback');
+  fb.textContent = msg;
+  fb.style.display = msg ? 'block' : 'none';
+}
+
+function validateInputs() {
+  // récupère et vérifie
+  const BW   = parseFloat(document.getElementById('bldgW').value);
+  const BH   = parseFloat(document.getElementById('bldgH').value);
+  const resW = parseFloat(document.getElementById('resW').value);
+  const resH = parseFloat(document.getElementById('resH').value);
+  const lum  = parseFloat(document.getElementById('lumens').value);
+  const D    = parseFloat(document.getElementById('dist').value);
+  const minL = parseFloat(document.getElementById('minLux').value);
+  const maxP = parseFloat(document.getElementById('maxPixel').value);
+  const ovX  = parseFloat(document.getElementById('ovx').value);
+  const ovY  = parseFloat(document.getElementById('ovy').value);
+
+  if (!BW || BW <= 0)  return "Largeur du bâtiment invalide.";
+  if (!BH || BH <= 0)  return "Hauteur du bâtiment invalide.";
+  if (!resW || resW <= 0) return "Résolution largeur invalide.";
+  if (!resH || resH <= 0) return "Résolution hauteur invalide.";
+  if (!lum || lum <= 0)   return "Lumens invalide.";
+  if (!D || D <= 0)       return "Distance de projection invalide.";
+  if (minL < 0)           return "Lux minimum doit être ≥ 0.";
+  if (maxP <= 0)          return "Pixel max doit être > 0.";
+  if (ovX < 0 || ovX >= 100) return "Overlap horizontal entre 0 et <100%.";
+  if (ovY < 0 || ovY >= 100) return "Overlap vertical entre 0 et <100%.";
+  return null;
+}
+
+// === Début ajout : base de données des optiques ===
+const OPTICS = [
+  { name: "LPLX02 (UST)", code: "V12H004X02", min: 0.35, max: 0.35, vshift: "45% --- 70%", hshift: "-15% --- 15%", lumens: 16900 },
+  { name: "ELPLX02S (UST)", code: "V12H004X0B", min: 0.35, max: 0.35, vshift: "45% --- 70%", hshift: "-15% --- 15%", lumens: 16900 },
+  { name: "ELPLU03S (Short)", code: "V12H004UA3", min: 0.48, max: 0.57, vshift: "-24% --- 24%", hshift: "-8% --- 8%", lumens: 17400 },
+  { name: "ELPLU04 (Short)", code: "V12H004U04", min: 0.64, max: 0.77, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19000 },
+  { name: "ELPLW08 (Short)", code: "V12H004W08", min: 0.86, max: 1.21, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19100 },
+  { name: "ELPLW06 (Short)", code: "V12H004W06", min: 1.19, max: 1.62, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19200 },
+  { name: "ELPLM15 (Middle)", code: "V12H004M0F", min: 1.57, max: 2.56, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 20000 },
+  { name: "ELPLM10 (Middle)", code: "V12H004M0A", min: 2.42, max: 3.71, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19900 },
+  { name: "ELPLM11 (Middle)", code: "V12H004M0B", min: 3.54, max: 5.41, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19000 },
+  { name: "ELPLL08 (Long)", code: "V12H004L08", min: 5.27, max: 7.41, vshift: "-60% --- 60%", hshift: "-18% --- 18%", lumens: 19000 },
+];
+
+function getOpticForThrow(throwRatio) {
+  // Cherche l'optique dont la plage inclut le throw ratio
+  return OPTICS.find(opt => throwRatio >= opt.min && throwRatio <= opt.max) || null;
+}
+// === Fin ajout : base de données des optiques ===
+
+// Variables globales pour le mode de calcul
+let currentCalcMode = 'horizontal';
+let currentGlobalZoomFactor = 1.0; // Zoom pour le mode automatique
+let currentManualZoomFactor = 1.0; // Zoom pour le mode manuel
+let baseLayout = null; // Stockera la configuration de base du mode automatique sans zoom
+let baseManualLayout = null; // Stockera la configuration de base du mode manuel sans zoom
+
+// Gestion des modes de calcul
+document.querySelectorAll('input[name="calcMode"]').forEach(el => {
+  el.addEventListener('change', function() {
+    currentCalcMode = this.value;
+    runSimulation(); // Relance la simulation avec le nouveau mode de calcul
+  });
+});
+
+// Gestion du curseur de zoom global pour le mode automatique
+document.getElementById('projectionZoomLevel').addEventListener('input', function(e) {
+  currentGlobalZoomFactor = parseInt(e.target.value) / 100;
+  document.getElementById('projectionZoomValue').textContent = `${parseInt(e.target.value)}%`;
+  
+  // Si une simulation a déjà été lancée, appliquer le zoom sans recalculer la configuration
+  if (baseLayout) {
+    applyZoomToAutoLayout();
+    drawCanvas('cv-auto', false);
+    showResults('results-auto');
+    updateFocalVisualization(layout.throw, false);
+  }
+});
+
+// Gestion du curseur de zoom pour le mode manuel
+document.getElementById('manualProjectionZoomLevel').addEventListener('input', function(e) {
+  currentManualZoomFactor = parseInt(e.target.value) / 100;
+  document.getElementById('manualProjectionZoomValue').textContent = `${parseInt(e.target.value)}%`;
+  
+  // Si une configuration manuelle existe, appliquer le zoom
+  if (baseManualLayout) {
+    applyZoomToManualLayout();
+    drawCanvas('cv-manual', true);
+    showTempResults('results-manual', tempLayout ? tempLayout.multiplier : 1);
+    updateFocalVisualization(tempLayout.throw, true);
+  }
+});
+
+// Fonction pour appliquer le zoom à la configuration automatique
+function applyZoomToAutoLayout() {
+  if (!baseLayout) return;
+  
+  // Copier baseLayout dans layout avec les dimensions ajustées par le zoom
+  layout = { ...baseLayout };
+  
+  // Appliquer le zoom aux dimensions
+  layout.imgW = baseLayout.baseImgW * currentGlobalZoomFactor;
+  layout.imgH = baseLayout.baseImgH * currentGlobalZoomFactor;
+  
+  // Recalculer les métriques dépendantes
+  const BW = +document.getElementById('bldgW').value;
+  const BH = +document.getElementById('bldgH').value;
+  const resW = +document.getElementById('resW').value;
+  const resH = +document.getElementById('resH').value;
+  const D = +document.getElementById('dist').value;
+  const ovX = +document.getElementById('ovx').value / 100;
+  const ovY = +document.getElementById('ovy').value / 100;
+  
+  // Taille de pixel avec les dimensions zoomées
+  layout.pxSize = layout.orientation === 'Paysage' 
+    ? layout.imgW / resW * 1000 
+    : layout.imgH / resH * 1000;
+  
+  // Throw ratio avec les dimensions zoomées
+  layout.throw = D / layout.imgW;
+  layout.focale = layout.throw * SENSOR_W;
+  
+  // Calcul de la résolution brute et nette
+  let bruteW, bruteH, netW, netH, mosaicW, mosaicH;
+  
+  if (layout.orientation === 'Paysage') {
+    bruteW = Math.round(resW + (layout.cols - 1) * resW * (1 - ovX));
+    bruteH = Math.round(resH + (layout.rows - 1) * resH * (1 - ovY));
+    mosaicW = layout.imgW + (layout.cols - 1) * layout.imgW * (1 - ovX);
+    mosaicH = layout.imgH + (layout.rows - 1) * layout.imgH * (1 - ovY);
+  } else {
+    bruteW = Math.round(resH + (layout.cols - 1) * resH * (1 - ovX));
+    bruteH = Math.round(resW + (layout.rows - 1) * resW * (1 - ovY));
+    mosaicW = layout.imgH + (layout.cols - 1) * layout.imgH * (1 - ovX);
+    mosaicH = layout.imgW + (layout.rows - 1) * layout.imgW * (1 - ovY);
+  }
+  
+  const pxW = mosaicW / bruteW;
+  const pxH = mosaicH / bruteH;
+  netW = Math.min(bruteW, Math.floor(BW / pxW));
+  netH = Math.min(bruteH, Math.floor(BH / pxH));
+  
+  layout.grossResolution = `${bruteW} x ${bruteH}`;
+  layout.netResolution = `${netW} x ${netH}`;
+  
+  // Mise à jour de l'optique
+  layout.optic = getOpticForThrow(layout.throw);
+}
+
+// Fonction pour appliquer le zoom à la configuration manuelle
+function applyZoomToManualLayout() {
+  if (!baseManualLayout) return;
+  
+  // Copier baseManualLayout dans tempLayout avec les dimensions ajustées par le zoom
+  tempLayout = { ...baseManualLayout };
+  
+  // Appliquer le zoom aux dimensions
+  tempLayout.imgW = baseManualLayout.baseImgW * currentManualZoomFactor;
+  tempLayout.imgH = baseManualLayout.baseImgH * currentManualZoomFactor;
+  
+  // Recalculer les métriques dépendantes
+  const BW = +document.getElementById('bldgW').value;
+  const BH = +document.getElementById('bldgH').value;
+  const resW = +document.getElementById('resW').value;
+  const resH = +document.getElementById('resH').value;
+  const D = +document.getElementById('dist').value;
+  const ovX = +document.getElementById('manOvX').value / 100;
+  const ovY = +document.getElementById('manOvY').value / 100;
+  
+  // Taille de pixel avec les dimensions zoomées
+  tempLayout.pxSize = tempLayout.orientation === 'Paysage' 
+    ? tempLayout.imgW / resW * 1000 
+    : tempLayout.imgH / resH * 1000;
+  
+  // Throw ratio avec les dimensions zoomées
+  tempLayout.throw = D / tempLayout.imgW;
+  tempLayout.focale = tempLayout.throw * SENSOR_W;
+  
+  // Calcul de la résolution brute et nette
+  let bruteW, bruteH, netW, netH, mosaicW, mosaicH;
+  
+  if (tempLayout.orientation === 'Paysage') {
+    bruteW = Math.round(resW + (tempLayout.cols - 1) * resW * (1 - ovX));
+    bruteH = Math.round(resH + (tempLayout.rows - 1) * resH * (1 - ovY));
+    mosaicW = tempLayout.imgW + (tempLayout.cols - 1) * tempLayout.imgW * (1 - ovX);
+    mosaicH = tempLayout.imgH + (tempLayout.rows - 1) * tempLayout.imgH * (1 - ovY);
+  } else {
+    bruteW = Math.round(resH + (tempLayout.cols - 1) * resH * (1 - ovX));
+    bruteH = Math.round(resW + (tempLayout.rows - 1) * resW * (1 - ovY));
+    mosaicW = tempLayout.imgH + (tempLayout.cols - 1) * tempLayout.imgH * (1 - ovX);
+    mosaicH = tempLayout.imgW + (tempLayout.rows - 1) * tempLayout.imgW * (1 - ovY);
+  }
+  
+  const pxW = mosaicW / bruteW;
+  const pxH = mosaicH / bruteH;
+  netW = Math.min(bruteW, Math.floor(BW / pxW));
+  netH = Math.min(bruteH, Math.floor(BH / pxH));
+  
+  tempLayout.grossResolution = `${bruteW} x ${bruteH}`;
+  tempLayout.netResolution = `${netW} x ${netH}`;
+  
+  // Mise à jour de l'optique
+  tempLayout.optic = getOpticForThrow(tempLayout.throw);
+}
+
+// Modification de la fonction runSimulation pour prendre en compte le mode de calcul
+function runSimulation() {
+  showFeedback("");
+
+  const err = validateInputs();
+  if (err) {
+    showFeedback(err);
+    return;
+  }
+
+  const BW = +document.getElementById('bldgW').value;
+  const BH = +document.getElementById('bldgH').value;
+  const [aW, aH] = document.getElementById('aspect').value.split('/').map(Number);
+  const resW = +document.getElementById('resW').value;
+  const resH = +document.getElementById('resH').value;
+  const lum = +document.getElementById('lumens').value;
+  const D = +document.getElementById('dist').value;
+  const minLux = +document.getElementById('minLux').value;
+  const maxPx = +document.getElementById('maxPixel').value;
+  const ovX = +document.getElementById('ovx').value / 100;
+  const ovY = +document.getElementById('ovy').value / 100;
+  const oMode = document.querySelector('input[name="orientMode"]:checked').value;
+
+  function computeBaseLayout(calculationMode, aspectRatio) {
+    let best = null;
+    if (calculationMode === 'vertical') {
+      for (let r = 1; r <= 20; r++) {
+        let imgH_base = BH / (1 + (r - 1) * (1 - ovY));
+        let imgW_base = imgH_base / aspectRatio;
+        let c = Math.ceil(BW / (imgW_base * (1 - ovX)));
+
+        // Nous stockons directement les dimensions de base et calculons les métriques
+        // sans appliquer de zoom ici
+        const pxSize = oMode === 'land' ? imgW_base / resW * 1000 : imgH_base / resH * 1000;
+        const luxA = lum * (c * r) / (BW * BH);
+        const tr = D / imgW_base;
+        const foc = tr * SENSOR_W;
+        const cfg = { 
+          cols: c, 
+          rows: r, 
+          tot: c * r, 
+          baseImgW: imgW_base, 
+          baseImgH: imgH_base, 
+          imgW: imgW_base, // Sans zoom initialement
+          imgH: imgH_base, // Sans zoom initialement
+          pxSize, 
+          luxA, 
+          throw: tr, 
+          focale: foc 
+        };
+        
+        if (pxSize <= maxPx) {
+          if (!best || cfg.tot < best.tot || (cfg.tot === best.tot && cfg.luxA > best.luxA)) {
+            best = cfg;
+          }
+        }
+        if (!best && (r === 20)) best = cfg;
+      }
+    } else { // 'horizontal'
+      for (let c = 1; c <= 20; c++) {
+        let imgW_base = BW / (1 + (c - 1) * (1 - ovX));
+        let imgH_base = imgW_base * aspectRatio;
+        let r = Math.ceil(BH / (imgH_base * (1 - ovY)));
+
+        const pxSize = oMode === 'land' ? imgW_base / resW * 1000 : imgH_base / resH * 1000;
+        const luxA = lum * (c * r) / (BW * BH);
+        const tr = D / imgW_base;
+        const foc = tr * SENSOR_W;
+        const cfg = { 
+          cols: c, 
+          rows: r, 
+          tot: c * r, 
+          baseImgW: imgW_base, 
+          baseImgH: imgH_base, 
+          imgW: imgW_base, // Sans zoom initialement
+          imgH: imgH_base, // Sans zoom initialement
+          pxSize, 
+          luxA, 
+          throw: tr, 
+          focale: foc 
+        };
+        
+        if (pxSize <= maxPx) {
+          if (!best || cfg.tot < best.tot || (cfg.tot === best.tot && cfg.luxA > best.luxA)) {
+            best = cfg;
+          }
+        }
+        if (!best && (c === 20)) best = cfg;
+      }
+    }
+    return best;
+  }
+
+  const calcMode = document.querySelector('input[name="calcMode"]:checked').value;
+  let land = computeBaseLayout(calcMode, aH / aW);
+  let port = computeBaseLayout(calcMode, aW / aH);
+
+  // Déterminer la configuration de base (sans zoom)
+  if (oMode === 'auto') {
+    baseLayout = land.tot <= port.tot ? { ...land, orientation: 'Paysage' } : { ...port, orientation: 'Portrait' };
+  } else if (oMode === 'land') {
+    baseLayout = { ...land, orientation: 'Paysage' };
+  } else { // 'port'
+    baseLayout = { ...port, orientation: 'Portrait' };
+  }
+
+  // Ajouter le multiplicateur (stacking)
+  let multiplier = 1;
+  while (baseLayout.luxA < minLux && multiplier < 8) {
+    multiplier++;
+    baseLayout.luxA = lum * baseLayout.tot * multiplier / (BW * BH);
+  }
+  baseLayout.multiplier = multiplier;
+
+  // Calculer les résolutions initiales avec les dimensions de base
+  let bruteW, bruteH, netW, netH, mosaicW, mosaicH;
+  
+  if (baseLayout.orientation === 'Paysage') {
+    bruteW = Math.round(resW + (baseLayout.cols - 1) * resW * (1 - ovX));
+    bruteH = Math.round(resH + (baseLayout.rows - 1) * resH * (1 - ovY));
+    mosaicW = baseLayout.imgW + (baseLayout.cols - 1) * baseLayout.imgW * (1 - ovX);
+    mosaicH = baseLayout.imgH + (baseLayout.rows - 1) * baseLayout.imgH * (1 - ovY);
+  } else {
+    bruteW = Math.round(resH + (baseLayout.cols - 1) * resH * (1 - ovX));
+    bruteH = Math.round(resW + (baseLayout.rows - 1) * resW * (1 - ovY));
+    mosaicW = baseLayout.imgH + (baseLayout.cols - 1) * baseLayout.imgH * (1 - ovX);
+    mosaicH = baseLayout.imgW + (baseLayout.rows - 1) * baseLayout.imgW * (1 - ovY);
+  }
+  
+  const pxW = mosaicW / bruteW;
+  const pxH = mosaicH / bruteH;
+  netW = Math.min(bruteW, Math.floor(BW / pxW));
+  netH = Math.min(bruteH, Math.floor(BH / pxH));
+  
+  baseLayout.grossResolution = `${bruteW} x ${bruteH}`;
+  baseLayout.netResolution = `${netW} x ${netH}`;
+  
+  baseLayout.optic = getOpticForThrow(baseLayout.throw);
+  baseLayout.luxMaxTheorique = lum * baseLayout.tot * baseLayout.multiplier / (BW * BH);
+  if (baseLayout.optic) {
+    baseLayout.luxReel = baseLayout.optic.lumens * baseLayout.tot * baseLayout.multiplier / (BW * BH);
+  } else {
+    baseLayout.luxReel = baseLayout.luxMaxTheorique;
+  }
+  baseLayout.projector = selectedProjector;
+
+  // Mise à jour des champs manuels
+  document.getElementById('manCols').value = baseLayout.cols;
+  document.getElementById('manRows').value = baseLayout.rows;
+
+  // Appliquer le zoom actuel à la configuration de base
+  applyZoomToAutoLayout();
+
+  // Affichage
+  drawCanvas('cv-auto', false);
+  showResults('results-auto');
+  updateFocalVisualization(layout.throw, false);
+}
+
+function manualUpdate() {
+  if (!layout) {
+    showFeedback("⚠️ Lancez d'abord « Calcul automatique » avant le réglage manuel.");
+    return;
+  }
+  showFeedback("");
+
+  const BW = +document.getElementById('bldgW').value;
+  const BH = +document.getElementById('bldgH').value;
+  const [aW, aH] = document.getElementById('aspect').value.split('/').map(Number);
+  const resW = +document.getElementById('resW').value;
+  const resH = +document.getElementById('resH').value;
+  const lum = +document.getElementById('lumens').value;
+  const D = +document.getElementById('dist').value;
+  const maxPxManual = +document.getElementById('manMaxPixel').value;
+  const ovX = +document.getElementById('manOvX').value / 100;
+  const ovY = +document.getElementById('manOvY').value / 100;
+  const oMode = document.querySelector('input[name="orientMode"]:checked').value;
+  
+  const manCols = +document.getElementById('manCols').value;
+  const manRows = +document.getElementById('manRows').value;
+  const manStack = +document.getElementById('manStack').value;
+
+  const aspectRatio = oMode === 'land' ? aH / aW : aW / aH;
+  const originalCalcMode = document.querySelector('input[name="calcMode"]:checked').value;
+
+  // Calculer les dimensions de base (sans zoom)
+  let imgW_base, imgH_base;
+  if (originalCalcMode === 'vertical') {
+    imgH_base = BH / (1 + (manRows - 1) * (1 - ovY));
+    imgW_base = imgH_base / aspectRatio;
+  } else { // 'horizontal'
+    imgW_base = BW / (1 + (manCols - 1) * (1 - ovX));
+    imgH_base = imgW_base * aspectRatio;
+  }
+
+  // Calculer les métriques de base
+  const pxSize_base = oMode === 'land' ? imgW_base / resW * 1000 : imgH_base / resH * 1000;
+  const totalArea = BW * BH;
+  const luxA = (lum * manCols * manRows * manStack) / totalArea;
+  const tr_base = D / imgW_base;
+  const foc_base = tr_base * SENSOR_W;
+
+  // Calculer la résolution brute et nette de base
+  let bruteW, bruteH, netW, netH, mosaicW, mosaicH;
+  
+  if (oMode === 'land') {
+    bruteW = Math.round(resW + (manCols - 1) * resW * (1 - ovX));
+    bruteH = Math.round(resH + (manRows - 1) * resH * (1 - ovY));
+    mosaicW = imgW_base + (manCols - 1) * imgW_base * (1 - ovX);
+    mosaicH = imgH_base + (manRows - 1) * imgH_base * (1 - ovY);
+  } else {
+    bruteW = Math.round(resH + (manCols - 1) * resH * (1 - ovX));
+    bruteH = Math.round(resW + (manRows - 1) * resW * (1 - ovY));
+    mosaicW = imgH_base + (manCols - 1) * imgH_base * (1 - ovX);
+    mosaicH = imgW_base + (manRows - 1) * imgW_base * (1 - ovY);
+  }
+  
+  const pxW = mosaicW / bruteW;
+  const pxH = mosaicH / bruteH;
+  netW = Math.min(bruteW, Math.floor(BW / pxW));
+  netH = Math.min(bruteH, Math.floor(BH / pxH));
+
+  // Créer la configuration manuelle de base
+  baseManualLayout = {
+    cols: manCols,
+    rows: manRows,
+    baseImgW: imgW_base,
+    baseImgH: imgH_base,
+    imgW: imgW_base, // Sans zoom initialement
+    imgH: imgH_base, // Sans zoom initialement
+    pxSize: pxSize_base,
+    luxA,
+    throw: tr_base,
+    focale: foc_base,
+    orientation: oMode,
+    netResolution: `${netW} x ${netH}`,
+    grossResolution: `${bruteW} x ${bruteH}`,
+    multiplier: manStack
+  };
+
+  baseManualLayout.optic = getOpticForThrow(baseManualLayout.throw);
+  baseManualLayout.luxMaxTheorique = luxA;
+  if (baseManualLayout.optic) {
+    baseManualLayout.luxReel = (baseManualLayout.optic.lumens * manCols * manRows * manStack) / totalArea;
+  } else {
+    baseManualLayout.luxReel = baseManualLayout.luxMaxTheorique;
+  }
+  baseManualLayout.projector = selectedProjector;
+
+  // Appliquer le zoom manuel à la configuration de base
+  applyZoomToManualLayout();
+
+  // Affichage
+  drawCanvas('cv-manual', true);
+  showTempResults('results-manual', tempLayout ? tempLayout.multiplier : 1);
+  updateFocalVisualization(tempLayout.throw, true);
+
+  document.getElementById('manual-lux').textContent = tempLayout.luxReel.toFixed(0) + ' lx';
+
+  // Affichage de la barre de distance
+  const pxSize2 = tempLayout.pxSize;
+  const distMin2 = calcDistanceForPPD(pxSize2, 30, 40);
+  let maxDist2 = Math.max(20, Math.min(200, distMin2 * 3));
+  const bar2 = document.getElementById('public-distance-bar');
+  const barCanvas2 = document.getElementById('bar-pixel-public');
+  const barCursor2 = document.getElementById('bar-pixel-cursor');
+  const barText2 = document.getElementById('bar-pixel-text');
+  const barMaxLabel2 = document.getElementById('bar-pixel-max-label');
+  if (bar2 && barCanvas2 && barCursor2 && barText2 && barMaxLabel2) {
+    bar2.style.display = '';
+    const ctx2 = barCanvas2.getContext('2d');
+    const grad2 = ctx2.createLinearGradient(0, 0, barCanvas2.width, 0);
+    grad2.addColorStop(0, '#e53935');
+    grad2.addColorStop(0.5, '#ffeb3b');
+    grad2.addColorStop(1, '#43a047');
+    ctx2.clearRect(0, 0, barCanvas2.width, barCanvas2.height);
+    ctx2.fillStyle = grad2;
+    ctx2.fillRect(0, 0, barCanvas2.width, barCanvas2.height);
+    let pct2 = Math.max(0, Math.min(1, distMin2 / maxDist2));
+    const x2 = pct2 * barCanvas2.width;
+    barCursor2.style.left = (x2 - 7) + 'px';
+    barCursor2.style.top = '0px';
+    barCursor2.style.width = '0';
+    barCursor2.style.height = '0';
+    barCursor2.style.borderLeft = '7px solid transparent';
+    barCursor2.style.borderRight = '7px solid transparent';
+    barCursor2.style.borderBottom = '15px solid #111';
+    barCursor2.style.position = 'absolute';
+    barCursor2.style.display = 'block';
+    barText2.textContent = `Distance optimale pour une image nette (≥30 PPD sur 40°) : ${distMin2.toFixed(2)} m`;
+    barMaxLabel2.textContent = maxDist2.toFixed(0) + ' m';
+  }
+}
+
+// Variables globales pour les couleurs
+let matrixColor = '#ff0000'; // Rouge vif par défaut
+let overlapColor = 'rgba(0,0,200,0.4)';
+let borderColor = '#ff9800';
+
+// Définition des palettes de couleurs pour chaque niveau
+const colorPalettes = {
+    '#ff0000': { // Rouge
+        1: '#ffcccc',
+        2: '#ff8080',
+        3: '#ff0000',
+        4: '#b30000',
+        5: '#660000',
+        6: '#400000',
+        7: '#200000',
+        8: '#000000'
+    },
+    '#00ff00': { // Vert
+        1: '#ccffcc',
+        2: '#80ff80',
+        3: '#00ff00',
+        4: '#00b300',
+        5: '#006600',
+        6: '#004000',
+        7: '#002000',
+        8: '#000000'
+    },
+    '#0000ff': { // Bleu
+        1: '#ccccff',
+        2: '#8080ff',
+        3: '#0000ff',
+        4: '#0000b3',
+        5: '#000066',
+        6: '#000040',
+        7: '#000020',
+        8: '#000000'
+    },
+    '#ffff00': { // Jaune
+        1: '#ffffcc',
+        2: '#ffff80',
+        3: '#ffff00',
+        4: '#b3b300',
+        5: '#666600',
+        6: '#404000',
+        7: '#202000',
+        8: '#000000'
+    },
+    '#ff00ff': { // Magenta
+        1: '#ffccff',
+        2: '#ff80ff',
+        3: '#ff00ff',
+        4: '#b300b3',
+        5: '#660066',
+        6: '#400040',
+        7: '#200020',
+        8: '#000000'
+    },
+    '#00ffff': { // Cyan
+        1: '#ccffff',
+        2: '#80ffff',
+        3: '#00ffff',
+        4: '#00b3b3',
+        5: '#006666',
+        6: '#004040',
+        7: '#002020',
+        8: '#000000'
+    },
+    '#00ffcc': { // Vert d'eau
+        1: '#ccfffa',
+        2: '#80fff0',
+        3: '#00ffcc',
+        4: '#00b38f',
+        5: '#006652',
+        6: '#004033',
+        7: '#002019',
+        8: '#000000'
+    },
+    '#8000ff': { // Violet
+        1: '#e6ccff',
+        2: '#cc80ff',
+        3: '#8000ff',
+        4: '#5900b3',
+        5: '#330066',
+        6: '#1f0040',
+        7: '#0f0020',
+        8: '#000000'
+    },
+    '#ff80ff': { // Rose
+        1: '#ffccff',
+        2: '#ff80ff',
+        3: '#ff00ff',
+        4: '#b300b3',
+        5: '#660066',
+        6: '#400040',
+        7: '#200020',
+        8: '#000000'
+    },
+    '#ff8000': { // Orange
+        1: '#ffe6cc',
+        2: '#ffcc80',
+        3: '#ff8000',
+        4: '#b35900',
+        5: '#663300',
+        6: '#401f00',
+        7: '#200f00',
+        8: '#000000'
+    }
+};
+
+// Fonction pour obtenir la couleur saturée
+function getSaturatedColor(baseColor, stack) {
+    const palette = colorPalettes[baseColor];
+    if (!palette) return baseColor;
+    return palette[stack] || palette[8];
+}
+
+// Fonction pour mettre à jour la légende
+function updateLegend() {
+    const legend = document.getElementById('legend');
+    if (!legend) return;
+
+    // Générer les couleurs pour chaque niveau
+    const colors = [
+        getSaturatedColor(matrixColor, 1), // 1 projecteur
+        getSaturatedColor(matrixColor, 2), // 2 projecteurs
+        getSaturatedColor(matrixColor, 3), // 3 projecteurs
+        getSaturatedColor(matrixColor, 4), // 4 projecteurs
+        getSaturatedColor(matrixColor, 5), // 5 projecteurs
+        getSaturatedColor(matrixColor, 6), // 6 projecteurs
+        getSaturatedColor(matrixColor, 7), // 7 projecteurs
+        getSaturatedColor(matrixColor, 8) // 8 projecteurs
+    ];
+
+    // Mettre à jour le HTML de la légende avec style pour le texte
+    legend.innerHTML = `
+        <p>Légende :</p>
+        <p style="background:${colors[0]}; color:black; text-shadow: 0 0 2px white;">1 projecteur</p>
+        <p style="background:${colors[1]}; color:black; text-shadow: 0 0 2px white;">2 projecteurs (Dual)</p>
+        <p style="background:${colors[2]}; color:white; text-shadow: 0 0 2px black;">3 projecteurs (Trial)</p>
+        <p style="background:${colors[3]}; color:white; text-shadow: 0 0 2px black;">4 projecteurs (Quadral)</p>
+        <p style="background:${colors[4]}; color:white; text-shadow: 0 0 2px black;">5 projecteurs</p>
+        <p style="background:${colors[5]}; color:white; text-shadow: 0 0 2px black;">6 projecteurs</p>
+        <p style="background:${colors[6]}; color:white; text-shadow: 0 0 2px black;">7 projecteurs</p>
+        <p style="background:${colors[7]}; color:white; text-shadow: 0 0 2px black;">8 projecteurs</p>
+    `;
+}
+
+// Mise à jour du panneau de couleurs
+function initColorPanel() {
+    const colorPanel = document.getElementById('color-panel');
+    const toggleButton = document.getElementById('toggle-color-panel');
+    const closeButton = document.getElementById('close-color-panel');
+
+    if (!colorPanel || !toggleButton || !closeButton) {
+        console.error('Éléments du panneau de couleurs non trouvés');
+        return;
+    }
+
+    // Gestion de l'ouverture/fermeture du panneau
+    toggleButton.addEventListener('click', function() {
+        const isVisible = colorPanel.style.right === '20px';
+        colorPanel.style.right = isVisible ? '-300px' : '20px';
+    });
+
+    closeButton.addEventListener('click', function() {
+        colorPanel.style.right = '-300px';
+    });
+
+    // Gestion des sélections de couleurs
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const colorSection = option.closest('.color-section');
+            if (!colorSection) return;
+            
+            const target = colorSection.dataset.target;
+            const color = option.dataset.color;
+
+            // Mise à jour de la sélection visuelle
+            colorSection.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+
+            // Mise à jour de la couleur
+            switch(target) {
+                case 'matrix-color':
+                    matrixColor = color;
+                    updateLegend();
+                    break;
+                case 'overlap-color':
+                    overlapColor = color;
+                    break;
+                case 'border-color':
+                    borderColor = color;
+                    break;
+            }
+
+            // Mise à jour des visualisations
+            drawCanvas('cv-auto', false);
+            drawCanvas('cv-manual', true);
+        });
+    });
+
+    // Initialiser la légende
+    updateLegend();
+}
+
+// Variables pour le zoom et le déplacement
+let zoomAuto = 1;
+let zoomManual = 1;
+let offsetAuto = { x: 0, y: 0 };
+let offsetManual = { x: 0, y: 0 };
+let isDraggingAuto = false;
+let isDraggingManual = false;
+let lastMousePos = { x: 0, y: 0 };
+
+// Initialisation des événements de zoom et déplacement
+function initZoomAndPan() {
+  // Gestion du zoom automatique
+  const zoomSliderAuto = document.getElementById('zoom-slider-auto');
+  const zoomValueAuto = document.getElementById('zoom-value-auto');
+  const canvasAuto = document.getElementById('cv-auto');
+  const containerAuto = canvasAuto.parentElement;
+  const resetButtonAuto = document.getElementById('reset-view-auto');
+
+  // Fonction de réinitialisation pour la vue automatique
+  function resetAutoView() {
+    zoomAuto = 1;
+    offsetAuto = { x: 0, y: 0 };
+    zoomSliderAuto.value = 1;
+    zoomValueAuto.textContent = '100%';
+    drawCanvas('cv-auto', false);
+  }
+
+  resetButtonAuto.addEventListener('click', resetAutoView);
+
+  zoomSliderAuto.addEventListener('input', (e) => {
+    zoomAuto = parseFloat(e.target.value);
+    zoomValueAuto.textContent = `${Math.round(zoomAuto * 100)}%`;
+    drawCanvas('cv-auto', false);
+  });
+
+  // Gestion du zoom manuel
+  const zoomSliderManual = document.getElementById('zoom-slider-manual');
+  const zoomValueManual = document.getElementById('zoom-value-manual');
+  const canvasManual = document.getElementById('cv-manual');
+  const containerManual = canvasManual.parentElement;
+  const resetButtonManual = document.getElementById('reset-view-manual');
+
+  // Fonction de réinitialisation pour la vue manuelle
+  function resetManualView() {
+    zoomManual = 1;
+    offsetManual = { x: 0, y: 0 };
+    zoomSliderManual.value = 1;
+    zoomValueManual.textContent = '100%';
+    drawCanvas('cv-manual', true);
+  }
+
+  resetButtonManual.addEventListener('click', resetManualView);
+
+  zoomSliderManual.addEventListener('input', (e) => {
+    zoomManual = parseFloat(e.target.value);
+    zoomValueManual.textContent = `${Math.round(zoomManual * 100)}%`;
+    drawCanvas('cv-manual', true);
+  });
+
+  // Gestion du déplacement automatique
+  containerAuto.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // Clic gauche uniquement
+      isDraggingAuto = true;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+    }
+  });
+
+  containerAuto.addEventListener('mousemove', (e) => {
+    if (isDraggingAuto) {
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      offsetAuto.x += dx / zoomAuto;
+      offsetAuto.y += dy / zoomAuto;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+      drawCanvas('cv-auto', false);
+    }
+  });
+
+  // Gestion du déplacement manuel
+  containerManual.addEventListener('mousedown', (e) => {
+    if (e.button === 0) { // Clic gauche uniquement
+      isDraggingManual = true;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+    }
+  });
+
+  containerManual.addEventListener('mousemove', (e) => {
+    if (isDraggingManual) {
+      const dx = e.clientX - lastMousePos.x;
+      const dy = e.clientY - lastMousePos.y;
+      offsetManual.x += dx / zoomManual;
+      offsetManual.y += dy / zoomManual;
+      lastMousePos = { x: e.clientX, y: e.clientY };
+      drawCanvas('cv-manual', true);
+    }
+  });
+
+  // Arrêt du déplacement au relâchement de la souris
+  document.addEventListener('mouseup', () => {
+    isDraggingAuto = false;
+    isDraggingManual = false;
+  });
+
+  // Réinitialisation du zoom et du déplacement avec la touche R
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') {
+      if (document.activeElement === canvasAuto || document.activeElement === containerAuto) {
+        resetAutoView();
+      } else if (document.activeElement === canvasManual || document.activeElement === containerManual) {
+        resetManualView();
+      }
+    }
+  });
+}
+
+// Modification de la fonction drawCanvas pour prendre en compte le zoom et le déplacement
+function drawCanvas(canvasId, useManual) {
+    const cv = document.getElementById(canvasId);
+    const ctx = cv.getContext('2d');
+    
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    const zoom = useManual ? zoomManual : zoomAuto;
+    const offset = useManual ? offsetManual : offsetAuto;
+
+    const BW = +document.getElementById('bldgW').value;
+    const BH = +document.getElementById('bldgH').value;
+    
+    const pad = Math.max(BW, BH) * 0.3;
+    const scale = Math.min(
+        (cv.width - 2 * pad) / BW,
+        (cv.height - 2 * pad) / BH
+    ) * 0.8;
+    
+    const BWpx = BW * scale;
+    const BHpx = BH * scale;
+    
+    const bx = (cv.width - BWpx) / 2 + offset.x * zoom;
+    const by = (cv.height - BHpx) / 2 - (cv.height * 0.15) + offset.y * zoom;
+
+    ctx.save();
+    ctx.translate(cv.width/2, cv.height/2);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-cv.width/2 + offset.x, -cv.height/2 + offset.y);
+
+    ctx.fillStyle = 'rgba(255, 165, 0, 0.2)';
+    ctx.fillRect(bx, by, BWpx, BHpx);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = borderColor;
+    ctx.strokeRect(bx, by, BWpx, BHpx);
+
+    // layout à dessiner
+    const currentProcessingLayout = useManual ? tempLayout : layout;
+    if (!currentProcessingLayout) {
+        ctx.restore(); // Restaurer le contexte avant de quitter
+        console.warn(`Layout non disponible pour le canvas ${canvasId}`);
+        return;
+    }
+
+    const cols = currentProcessingLayout.cols;
+    const rows = currentProcessingLayout.rows;
+    
+    const ovX = useManual
+      ? +document.getElementById('manOvX').value / 100
+      : +document.getElementById('ovx').value / 100;
+    const ovY = useManual
+      ? +document.getElementById('manOvY').value / 100
+      : +document.getElementById('ovy').value / 100;
+
+    // Utiliser imgW et imgH directement depuis le layout calculé
+    const imgWm = currentProcessingLayout.imgW;
+    const imgHm = currentProcessingLayout.imgH;
+
+    const imgWpx = imgWm * scale;
+    const imgHpx = imgHm * scale;
+
+    const covWpx = imgWpx + (cols - 1) * (imgWpx * (1 - ovX));
+    const covHpx = imgHpx + (rows - 1) * (imgHpx * (1 - ovY));
+    const startX = bx - (covWpx - BWpx) / 2;
+    const startY = by - (covHpx - BHpx) / 2;
+
+    let stack = 1;
+    if (useManual) {
+        stack = +document.getElementById('manStack').value;
+    } else if (layout && layout.multiplier) {
+        stack = layout.multiplier;
+    }
+
+    const color = getSaturatedColor(matrixColor, stack);
+
+    let idx = 0;
+    const rects = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (imgWpx * (1 - ovX));
+        const y = startY + r * (imgHpx * (1 - ovY));
+        rects.push({x,y,w:imgWpx,h:imgHpx});
+        ctx.fillStyle = color;
+        ctx.fillRect(x,y,imgWpx,imgHpx);
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
+        const sx = imgWpx/10, sy = imgHpx/10;
+        for (let i=1; i<10; i++){
+          ctx.beginPath();
+          ctx.moveTo(x+sx*i,y); ctx.lineTo(x+sx*i,y+imgHpx);
+          ctx.moveTo(x,y+sy*i); ctx.lineTo(x+imgWpx,y+sy*i);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x,y,imgWpx,imgHpx);
+        ctx.fillStyle = '#000';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 22px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.strokeText(`${idx+1}`, x+imgWpx/2, y+imgHpx/2);
+        ctx.fillText(`${idx+1}`, x+imgWpx/2, y+imgHpx/2);
+        idx++;
+      }
+    }
+
+    ctx.fillStyle = 'rgba(255, 165, 0, 0.2)';
+    ctx.fillRect(bx, by, BWpx, BHpx);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = borderColor;
+    ctx.strokeRect(bx, by, BWpx, BHpx);
+
+    ctx.fillStyle = overlapColor;
+    for (let i=0; i<rects.length; i++){
+      for (let j=i+1; j<rects.length; j++){
+        const A=rects[i], B=rects[j];
+        const ix=Math.max(A.x,B.x), iy=Math.max(A.y,B.y);
+        const iw=Math.min(A.x+A.w,B.x+B.w)-ix;
+        const ih=Math.min(A.y+A.h,B.y+B.h)-iy;
+        if (iw>1 && ih>1) ctx.fillRect(ix,iy,iw,ih);
+      }
+    }
+    ctx.fillStyle='rgba(200,0,0,0.3)';
+    rects.forEach(r=>{
+      if (r.x<bx)          ctx.fillRect(r.x, r.y, bx-r.x, r.h);
+      if (r.x+r.w>bx+BWpx) ctx.fillRect(bx+BWpx, r.y, r.x+r.w-(bx+BWpx), r.h);
+      if (r.y<by)          ctx.fillRect(r.x, r.y, r.w, by-r.y);
+      if (r.y+r.h>by+BHpx) ctx.fillRect(r.x, by+BHpx, r.w, r.y+r.h-(by+BHpx));
+    });
+
+    ctx.save();
+    ctx.fillStyle = '#000'; 
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center'; 
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${BW.toFixed(2)} m`, bx + BWpx/2, by - 8);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(bx - 8, by + BHpx/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`${BH.toFixed(2)} m`, 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+}
+
+function formatThrowRatio(tr) {
+  return Math.floor(tr * 100) / 100;
+}
+
+function showResults(resultId){
+  if (!layout) return;
+  const R = layout;
+  let opticInfo = R.optic ?
+    `<div>Optique utilisée : ${R.optic.name} (${R.optic.code})</div><div>Throw ratio plage : ${R.optic.min}–${R.optic.max}</div><div>Lens shift V : ${R.optic.vshift}</div><div>Lens shift H : ${R.optic.hshift}</div><div>Lumens après réduction : ${R.optic.lumens} lm</div>` :
+    `<div>Aucune optique trouvée pour ce throw ratio.</div>`;
+  let projInfo = R.projector ?
+    `<div>Projecteur : ${R.projector.name}</div><div>Lumens natif : ${R.projector.brightness ? R.projector.brightness + ' lm' : '—'}</div><div>Résolution : ${R.projector.resolution.w && R.projector.resolution.h ? R.projector.resolution.w + ' x ' + R.projector.resolution.h : '—'}</div><div>Ratio : ${R.projector.aspect || '—'}</div>` :
+    '';
+  document.getElementById(resultId).innerHTML =
+    projInfo +
+    `<div>Orientation : ${R.orientation}</div>`+
+    `<div>Projecteurs : ${R.cols} × ${R.rows} = ${R.tot}</div>`+
+    `<div>Image p/proj : ${R.imgW.toFixed(2)} × ${R.imgH.toFixed(2)} m</div>`+
+    `<div>Pixel (mm) : ${R.pxSize.toFixed(2)}</div>`+
+    `<div>Zoom appliqué : ${Math.round(currentGlobalZoomFactor * 100)}%</div>`+
+    `<div>Throw ratio : ${getSingleThrowRatio().toFixed(2)} :1</div>`+
+    `<div>Lux max théorique : ${R.luxMaxTheorique.toFixed(0)} lx</div>`+
+    `<div>Lux réel (optique) : ${R.luxReel.toFixed(0)} lx</div>`+
+    `<div>Multiplicateur : ${R.multiplier}</div>`+
+    `<div>Espace pixélaire net : ${R.netResolution}</div>`+
+    `<div>Espace pixélaire brut : ${R.grossResolution}</div>`+
+    opticInfo;
+  document.getElementById(resultId).style.display = 'block';
+
+  // Affichage de la barre de distance public (auto)
+  const pxSize = R.pxSize;
+  const distMin = calcDistanceForPPD(pxSize, 30, 40);
+  let maxDist = Math.max(20, Math.min(200, distMin * 3));
+  const bar = document.getElementById('public-distance-bar-auto');
+  const barCanvas = document.getElementById('bar-pixel-public-auto');
+  const barCursor = document.getElementById('bar-pixel-cursor-auto');
+  const barText = document.getElementById('bar-pixel-text-auto');
+  const barMaxLabel = document.getElementById('bar-pixel-max-label-auto');
+  if (bar && barCanvas && barCursor && barText && barMaxLabel) {
+    bar.style.display = '';
+    const ctx = barCanvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0,0,barCanvas.width,0);
+    grad.addColorStop(0, '#e53935');
+    grad.addColorStop(0.5, '#ffeb3b');
+    grad.addColorStop(1, '#43a047');
+    ctx.clearRect(0,0,barCanvas.width,barCanvas.height);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,barCanvas.width,barCanvas.height);
+    let pct = Math.max(0, Math.min(1, distMin / maxDist));
+    const x = pct * barCanvas.width;
+    barCursor.style.left = (x-7) + 'px';
+    barCursor.style.top = '0px';
+    barCursor.style.width = '0';
+    barCursor.style.height = '0';
+    barCursor.style.borderLeft = '7px solid transparent';
+    barCursor.style.borderRight = '7px solid transparent';
+    barCursor.style.borderBottom = '15px solid #111';
+    barCursor.style.position = 'absolute';
+    barCursor.style.display = 'block';
+    barText.textContent = `Distance minimale recommandée pour ne pas distinguer les pixels : ${distMin.toFixed(2)} m`;
+    barMaxLabel.textContent = maxDist.toFixed(0) + ' m';
+  }
+}
+
+function showTempResults(resultId, manStack){
+  if (!tempLayout) return;
+  const R = tempLayout;
+  let opticInfo = R.optic ?
+    `<div>Optique utilisée : ${R.optic.name} (${R.optic.code})</div><div>Throw ratio plage : ${R.optic.min}–${R.optic.max}</div><div>Lens shift V : ${R.optic.vshift}</div><div>Lens shift H : ${R.optic.hshift}</div><div>Lumens après réduction : ${R.optic.lumens} lm</div>` :
+    `<div>Aucune optique trouvée pour ce throw ratio.</div>`;
+  let projInfo = R.projector ?
+    `<div>Projecteur : ${R.projector.name}</div><div>Lumens natif : ${R.projector.brightness ? R.projector.brightness + ' lm' : '—'}</div><div>Résolution : ${R.projector.resolution.w && R.projector.resolution.h ? R.projector.resolution.w + ' x ' + R.projector.resolution.h : '—'}</div><div>Ratio : ${R.projector.aspect || '—'}</div>` :
+    '';
+  let stackLabel = 'Single';
+  if (manStack === 2) stackLabel = 'Dual';
+  else if (manStack === 3) stackLabel = 'Trial';
+  else if (manStack === 4) stackLabel = 'Quadral';
+  else if (manStack > 4) stackLabel = manStack;
+  document.getElementById(resultId).innerHTML =
+    projInfo +
+    `<div>Orientation : ${R.orientation}</div>`+
+    `<div>Projecteurs : ${R.cols} × ${R.rows}</div>`+
+    `<div>Stack : ${stackLabel}</div>`+
+    `<div>Image p/proj : ${R.imgW.toFixed(2)} × ${R.imgH.toFixed(2)} m</div>`+
+    `<div>Pixel (mm) : ${R.pxSize.toFixed(2)}</div>`+
+    `<div>Zoom appliqué : ${Math.round(currentManualZoomFactor * 100)}%</div>`+
+    `<div>Throw ratio : ${getSingleThrowRatio().toFixed(2)} :1</div>`+
+    `<div>Lux max théorique : ${R.luxMaxTheorique.toFixed(0)} lx</div>`+
+    `<div>Lux réel (optique) : ${R.luxReel.toFixed(0)} lx</div>`+
+    `<div>Espace pixélaire net : ${R.netResolution}</div>`+
+    `<div>Espace pixélaire brut : ${R.grossResolution}</div>`+
+    opticInfo;
+  document.getElementById(resultId).style.display = 'block';
+
+  // Affichage de la barre de distance public (manuel)
+  const pxSize2 = R.pxSize;
+  const distMin2 = calcDistanceForPPD(pxSize2, 30, 40);
+  let maxDist2 = Math.max(20, Math.min(200, distMin2 * 3));
+  const bar2 = document.getElementById('public-distance-bar');
+  const barCanvas2 = document.getElementById('bar-pixel-public');
+  const barCursor2 = document.getElementById('bar-pixel-cursor');
+  const barText2 = document.getElementById('bar-pixel-text');
+  const barMaxLabel2 = document.getElementById('bar-pixel-max-label');
+  if (bar2 && barCanvas2 && barCursor2 && barText2 && barMaxLabel2) {
+    bar2.style.display = '';
+    const ctx2 = barCanvas2.getContext('2d');
+    const grad2 = ctx2.createLinearGradient(0,0,barCanvas2.width,0);
+    grad2.addColorStop(0, '#e53935');
+    grad2.addColorStop(0.5, '#ffeb3b');
+    grad2.addColorStop(1, '#43a047');
+    ctx2.clearRect(0,0,barCanvas2.width,barCanvas2.height);
+    ctx2.fillStyle = grad2;
+    ctx2.fillRect(0,0,barCanvas2.width,barCanvas2.height);
+    let pct2 = Math.max(0, Math.min(1, distMin2 / maxDist2));
+    const x2 = pct2 * barCanvas2.width;
+    barCursor2.style.left = (x2-7) + 'px';
+    barCursor2.style.top = '0px';
+    barCursor2.style.width = '0';
+    barCursor2.style.height = '0';
+    barCursor2.style.borderLeft = '7px solid transparent';
+    barCursor2.style.borderRight = '7px solid transparent';
+    barCursor2.style.borderBottom = '15px solid #111';
+    barCursor2.style.position = 'absolute';
+    barCursor2.style.display = 'block';
+    barText2.textContent = `Distance optimale pour une image nette (≥30 PPD sur 40°) : ${distMin2.toFixed(2)} m`;
+    barMaxLabel2.textContent = maxDist2.toFixed(0) + ' m';
+  }
+}
+
+// Focal Range Visualization Script
+const rangesInput = [
+  { min: 0.35, max: 0.35, label: "0.35", minPct: 4.72, maxPct: 4.72 },
+  { min: 0.48, max: 0.57, label: "0.48–0.57", minPct: 6.48, maxPct: 7.69 },
+  { min: 0.64, max: 0.77, label: "0.64–0.77", minPct: 8.64, maxPct: 10.39 },
+  { min: 0.86, max: 1.21, label: "0.86–1.21", minPct: 11.61, maxPct: 16.33 },
+  { min: 1.19, max: 1.62, label: "1.19–1.62", minPct: 16.06, maxPct: 21.86 },
+  { min: 1.57, max: 2.56, label: "1.57–2.56", minPct: 21.18, maxPct: 34.55 },
+  { min: 2.42, max: 3.71, label: "2.42–3.71", minPct: 32.66, maxPct: 50.07 },
+  { min: 3.54, max: 5.41, label: "3.54–5.41", minPct: 47.78, maxPct: 73.01 },
+  { min: 5.27, max: 7.41, label: "5.27–7.41", minPct: 71.12, maxPct: 100 }
+];
+
+const line0 = document.getElementById('line0');
+const line1 = document.getElementById('line1');
+const grad  = document.getElementById('grad');
+const minF = 0.35;
+const maxF = 7.41;
+
+rangesInput.forEach((r, i) => {
+  const leftPct = ((r.min - minF) / (maxF - minF)) * 100;
+  const rightPct = ((r.max - minF) / (maxF - minF)) * 100;
+  const widthPct = rightPct - leftPct;
+  const div = document.createElement('div');
+  div.className = 'range';
+  div.style.left = `${leftPct}%`;
+  div.style.width = `${widthPct}%`;
+  div.textContent = r.label;
+
+  (i % 2 === 0 ? line0 : line1).appendChild(div);
+});
+
+const addedLabels = new Set();
+rangesInput.forEach(r => {
+  [r.min, r.max].forEach(val => {
+    const key = val.toFixed(2);
+    if (addedLabels.has(key)) return;
+    addedLabels.add(key);
+
+    const pct = ((val - minF) / (maxF - minF)) * 100;
+
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.left = `${pct}%`;
+    grad.appendChild(tick);
+
+    const label = document.createElement('div');
+    label.className = 'tick-label';
+    label.style.left = `${pct}%`;
+    label.textContent = key;
+    grad.appendChild(label);
+  });
+});
+
+const marker = document.createElement('div');
+marker.id = 'marker';
+const markerLine = document.createElement('div');
+markerLine.id = 'marker-line';
+grad.appendChild(marker);
+grad.appendChild(markerLine);
+
+let autoThrow = null, manualThrow = null;
+function updateFocalVisualization(throwRatio, isManual = false) {
+  const f = throwRatio;
+  const minF = 0.35;
+  const maxF = 7.41;
+  // On stocke la valeur pour chaque mode
+  if (isManual) {
+    manualThrow = f;
+  } else {
+    autoThrow = f;
+  }
+  // On efface les anciens curseurs
+  const grad = document.getElementById('grad');
+  let markerAuto = document.getElementById('marker-auto');
+  let markerManual = document.getElementById('marker-manual');
+  let markerLineAuto = document.getElementById('marker-line-auto');
+  let markerLineManual = document.getElementById('marker-line-manual');
+  if (!markerAuto) {
+    markerAuto = document.createElement('div');
+    markerAuto.id = 'marker-auto';
+    markerAuto.style.position = 'absolute';
+    markerAuto.style.top = '-15px';
+    markerAuto.style.width = '0';
+    markerAuto.style.height = '0';
+    markerAuto.style.borderLeft = '7px solid transparent';
+    markerAuto.style.borderRight = '7px solid transparent';
+    markerAuto.style.borderBottom = '15px solid yellow';
+    markerAuto.style.display = 'none';
+    grad.appendChild(markerAuto);
+    markerLineAuto = document.createElement('div');
+    markerLineAuto.id = 'marker-line-auto';
+    markerLineAuto.style.position = 'absolute';
+    markerLineAuto.style.top = '-25px';
+    markerLineAuto.style.height = '2px';
+    markerLineAuto.style.backgroundColor = 'yellow';
+    markerLineAuto.style.display = 'none';
+    grad.appendChild(markerLineAuto);
+  }
+  if (!markerManual) {
+    markerManual = document.createElement('div');
+    markerManual.id = 'marker-manual';
+    markerManual.style.position = 'absolute';
+    markerManual.style.top = '-15px';
+    markerManual.style.width = '0';
+    markerManual.style.height = '0';
+    markerManual.style.borderLeft = '7px solid transparent';
+    markerManual.style.borderRight = '7px solid transparent';
+    markerManual.style.borderBottom = '15px solid red';
+    markerManual.style.display = 'none';
+    grad.appendChild(markerManual);
+    markerLineManual = document.createElement('div');
+    markerLineManual.id = 'marker-line-manual';
+    markerLineManual.style.position = 'absolute';
+    markerLineManual.style.top = '-25px';
+    markerLineManual.style.height = '2px';
+    markerLineManual.style.backgroundColor = 'red';
+    markerLineManual.style.display = 'none';
+    grad.appendChild(markerLineManual);
+  }
+  // Affichage des curseurs
+  // Curseur automatique (jaune)
+  if (autoThrow && !isNaN(autoThrow) && autoThrow >= minF && autoThrow <= maxF) {
+    const pct = ((autoThrow - minF) / (maxF - minF)) * 100;
+    markerAuto.style.left = `${pct}%`;
+    markerAuto.style.display = 'block';
+    markerLineAuto.style.left = `${pct}%`;
+    markerLineAuto.style.display = 'block';
+  } else {
+    markerAuto.style.display = 'none';
+    markerLineAuto.style.display = 'none';
+  }
+  // Curseur manuel (rouge)
+  if (manualThrow && !isNaN(manualThrow) && manualThrow >= minF && manualThrow <= maxF) {
+    const pct = ((manualThrow - minF) / (maxF - minF)) * 100;
+    markerManual.style.left = `${pct}%`;
+    markerManual.style.display = 'block';
+    markerLineManual.style.left = `${pct}%`;
+    markerLineManual.style.display = 'block';
+  } else {
+    markerManual.style.display = 'none';
+    markerLineManual.style.display = 'none';
+  }
+  // Affichage du texte de résultat
+  const hit = rangesInput.filter(r => f >= r.min && f <= r.max).map(r => r.label);
+  document.getElementById('result').textContent = hit.length
+    ? `Valeur ${f && !isNaN(f) ? f.toFixed(2) : '-'} dans les plages : ${hit.join(', ')}`
+    : `Aucune plage pour ${f && !isNaN(f) ? f.toFixed(2) : '-'}`;
+}
+
+// === Début ajout : gestion du changement de projecteur ===
+function onProjectorChange() {
+  const val = document.getElementById('projectorProfile').value;
+  selectedProjector = PROJECTORS.find(p => p.id === val);
+  if (selectedProjector.id === 'ebpu2220b') {
+    document.getElementById('aspect').value = selectedProjector.aspect;
+    document.getElementById('aspect').disabled = true;
+    document.getElementById('resW').value = selectedProjector.resolution.w;
+    document.getElementById('resW').disabled = true;
+    document.getElementById('resH').value = selectedProjector.resolution.h;
+    document.getElementById('resH').disabled = true;
+    document.getElementById('lumens').value = selectedProjector.brightness;
+    document.getElementById('lumens').disabled = true;
+  } else {
+    document.getElementById('aspect').disabled = false;
+    document.getElementById('resW').disabled = false;
+    document.getElementById('resH').disabled = false;
+    document.getElementById('lumens').disabled = false;
+  }
+}
+window.addEventListener('DOMContentLoaded', onProjectorChange);
+// === Fin ajout ===
+
+function getSingleThrowRatio() {
+  const D = +document.getElementById('dist').value;
+  const BW = +document.getElementById('bldgW').value;
+  const oMode = document.querySelector('input[name="orientMode"]:checked').value;
+  const [aW,aH] = document.getElementById('aspect').value.split('/').map(Number);
+  
+  // Récupération du nombre de colonnes selon le mode
+  const cols = layout ? layout.cols : +document.getElementById('manCols').value;
+  
+  // Calcul de la largeur d'image projetée par projecteur SANS overlap
+  const imgW = BW / cols;
+  
+  // Calcul du throw ratio en tenant compte de l'orientation
+  const ratio = oMode === 'land' ? aH/aW : aW/aH;
+  const imgH = imgW * ratio;
+  
+  // Le throw ratio est calculé sur la dimension la plus grande
+  return Math.floor((D / Math.max(imgW, imgH)) * 100) / 100;
+}
+
+// Ajout : fonction de calcul de la distance optimale pour un PPD donné
+/**
+ * Calcule la distance minimale optimale pour garantir une densité de pixels par degré (PPD) donnée.
+ * @param {number} pixel_size_mm - Taille d'un pixel projeté en millimètres (ex: 5 pour 5mm)
+ * @param {number} ppd_target - Densité visuelle minimale en pixels par degré (par défaut 30)
+ * @param {number} fov_deg - Champ de vision horizontal en degrés (par défaut 40)
+ * @returns {number} Distance optimale en mètres
+ */
+function calcDistanceForPPD(pixel_size_mm, ppd_target = 30, fov_deg = 40) {
+    const pixel_size_m = pixel_size_mm / 1000;
+    const width = pixel_size_m * ppd_target * fov_deg;
+    const fov_rad = fov_deg * Math.PI / 180;
+    const distance = width / (2 * Math.tan(fov_rad / 2));
+    return distance;
+}
+
+// Initialiser le panneau de couleurs au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    initColorPanel();
+    initZoomAndPan();
+});
+
+// Fonction pour initialiser le panneau de couleurs
+function initColorPanel() {
+    const colorPanel = document.getElementById('color-panel');
+    const toggleButton = document.getElementById('toggle-color-panel');
+    const closeButton = document.getElementById('close-color-panel');
+
+    if (!colorPanel || !toggleButton || !closeButton) {
+        console.error('Éléments du panneau de couleurs non trouvés');
+        return;
+    }
+
+    // Gestion de l'ouverture/fermeture du panneau
+    toggleButton.addEventListener('click', function() {
+        const isVisible = colorPanel.style.right === '20px';
+        colorPanel.style.right = isVisible ? '-300px' : '20px';
+    });
+
+    closeButton.addEventListener('click', function() {
+        colorPanel.style.right = '-300px';
+    });
+
+    // Gestion des sélections de couleurs
+    document.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const colorSection = option.closest('.color-section');
+            if (!colorSection) return;
+            
+            const target = colorSection.dataset.target;
+            const color = option.dataset.color;
+
+            // Mise à jour de la sélection visuelle
+            colorSection.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+
+            // Mise à jour de la couleur
+            switch(target) {
+                case 'matrix-color':
+                    matrixColor = color;
+                    updateLegend();
+                    break;
+                case 'overlap-color':
+                    overlapColor = color;
+                    break;
+                case 'border-color':
+                    borderColor = color;
+                    break;
+            }
+
+            // Mise à jour des visualisations
+            drawCanvas('cv-auto', false);
+            drawCanvas('cv-manual', true);
+        });
+    });
+
+    // Initialiser la légende
+    updateLegend();
+}
+
+// Fonction pour initialiser les sections pliables - version robuste
+function initCollapsibleSections() {
+  console.log("Initialisation des sections pliables");
+  
+  // Sélectionner toutes les sections
+  const sections = document.querySelectorAll('.collapsible-section');
+  
+  sections.forEach((section, index) => {
+    console.log(`Configuration de la section ${index+1}`);
+    
+    // Sélectionner les éléments
+    const header = section.querySelector('.collapsible-header');
+    const content = section.querySelector('.collapsible-content');
+    const toggle = section.querySelector('.collapsible-toggle');
+    
+    // Initialiser l'état selon la classe
+    const isCollapsed = section.classList.contains('collapsed');
+    if (isCollapsed) {
+      console.log(`Section ${index+1} est initialement repliée`);
+      content.style.display = 'none';
+      content.style.height = '0';
+    } else {
+      console.log(`Section ${index+1} est initialement déployée`);
+      content.style.display = 'block';
+      content.style.height = 'auto';
+    }
+    
+    // Fonction pour replier/déplier
+    const toggleSection = function(event) {
+      // Empêcher la propagation pour éviter le double déclenchement
+      event.stopPropagation();
+      
+      console.log(`Clic sur section ${index+1}, état actuel: ${isCollapsed ? 'replié' : 'déployé'}`);
+      
+      if (section.classList.contains('collapsed')) {
+        // Déplier
+        section.classList.remove('collapsed');
+        content.style.display = 'block';
+        // Délai pour permettre à la transition de fonctionner
+        setTimeout(() => {
+          content.style.height = content.scrollHeight + 'px';
+          // Après la transition, mettre à auto pour s'adapter au contenu
+          setTimeout(() => {
+            content.style.height = 'auto';
+          }, 300);
+        }, 10);
+        console.log(`Section ${index+1} dépliée`);
+      } else {
+        // Replier
+        // Fixer la hauteur actuelle pour permettre l'animation
+        content.style.height = content.scrollHeight + 'px';
+        // Forcer un reflow
+        content.offsetHeight;
+        // Définir la hauteur à 0 pour l'animation
+        content.style.height = '0';
+        // Ajouter la classe collapsed après un court délai
+        setTimeout(() => {
+          section.classList.add('collapsed');
+          // Masquer le contenu après la transition
+          setTimeout(() => {
+            if (section.classList.contains('collapsed')) {
+              content.style.display = 'none';
+            }
+          }, 300);
+        }, 10);
+        console.log(`Section ${index+1} repliée`);
+      }
+    };
+    
+    // Attacher les écouteurs d'événements
+    header.addEventListener('click', toggleSection);
+    if (toggle) {
+      toggle.addEventListener('click', toggleSection);
+    }
+  });
+  
+  console.log("Initialisation des sections pliables terminée");
+}
+
+// ... existing code ...
+
+// Au chargement de la page
+window.onload = function() {
+  console.log("Page chargée, sections pliables initialisées avec événements inline");
+  
+  // Init UI d'abord pour s'assurer que les éléments sont disponibles
+  initUI();
+  
+  // Init visualisation des plages focales
+  initFocalRangeViz();
+  
+  // Init contrôles de zoom
+  initZoomControls();
+  
+  // Init le calculateur luxohms si présent
+  if (typeof initLuxOhmsCalculator === 'function') {
+    initLuxOhmsCalculator();
+  }
+
+  // Init Three.js si présent
+  if (typeof initThreeJS === 'function') {
+    initThreeJS();
+  }
+  
+  // Init Color Panel en dernier pour s'assurer que tous les éléments sont prêts
+  initColorPanel();
+
+  console.log("Initialisation complète du simulateur");
+};
+
+// ... existing code ...
+
+function initZoomControls() {
+  // Initialisation des contrôles de zoom
+  initZoomAndPan();
+}
+
+// ... existing code ...
+
+// Fonction extrêmement simple pour plier/déplier les sections
+function toggleSection(sectionId, event) {
+  // Éviter la propagation si l'événement vient du bouton
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  console.log("Toggle section:", sectionId);
+  const section = document.getElementById(sectionId);
+  if (section) {
+    section.classList.toggle('closed');
+    console.log("Section toggled:", section.classList.contains('closed') ? "fermée" : "ouverte");
+  } else {
+    console.error("Section non trouvée:", sectionId);
+  }
+}
+</script>
+
+</body>
+</html>
